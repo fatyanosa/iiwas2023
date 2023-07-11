@@ -48,8 +48,7 @@ best_mask = 0.1
 
 def impute(df, i):
     miss_data = df.copy()
-    miss_data = miss_data.mask(rng.random(df.shape) < i)
-    miss_data.loc[miss_data["anomaly"] == 1]
+    miss_data["value"] = miss_data["value"].mask(rng.random(miss_data["value"].shape) < i)
 
     return pd.DataFrame(miss_data.copy()).interpolate(
                 method="linear", limit_direction="both"
