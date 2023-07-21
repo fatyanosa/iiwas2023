@@ -84,6 +84,7 @@ if os.stat(output_file).st_size == 0:
     f_results.close()
 
 for data, anomaly_points in datasets.items():
+    start_prep = time.time()
     print(data)
     print("Data= ", data)
     df = pd.read_csv("data/" + data + ".csv", low_memory=False)
@@ -96,12 +97,15 @@ for data, anomaly_points in datasets.items():
 
     df.index = df["timestamp"]
     df.drop(["timestamp"], axis=1, inplace=True)
-
+    end_prep = time.time()
     for fraction in np.arange(0.1, 1, 0.1):
         print("Fraction= ", fraction)
+        start_frac = time.time()
         miss_data = df.copy()
         miss_data.loc[df.sample(frac=fraction, random_state=42).index, "value"] = np.nan
+        end_frac = time.time()
         for imp in imp_methods:
+            start_imp = time.time()
             try:
                 X_filled = imputation(imp, miss_data).ravel()
                 y = pd.DataFrame({"y_true": df["value"], "y_pred": X_filled})
@@ -109,10 +113,10 @@ for data, anomaly_points in datasets.items():
             except ValueError as e:
                 print(e)
                 continue
-
+            end_imp = time.time()
             for method in ad_methods:
                 print("method=", method)
-                start_time = time.time()
+                start_ad = time.time()
                 (
                     f1_before,
                     recall_before,
@@ -123,8 +127,13 @@ for data, anomaly_points in datasets.items():
                     method, df, X_filled
                 )
 
-                end_time = time.time()
-                exec_time = round(end_time - start_time)
+                end_ad = time.time()
+                exec_time = (
+                    round(end_prep - start_prep)
+                    + round(end_frac - start_frac)
+                    + round(end_imp - start_imp)
+                    + round(end_ad - start_ad)
+                )
 
                 new_row = {
                     "data": data,
